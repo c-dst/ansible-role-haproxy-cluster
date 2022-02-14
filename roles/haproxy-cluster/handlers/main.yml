@@ -1,0 +1,15 @@
+---
+# handlers file for Etcd
+- name: reload systemd
+  ansible.builtin.systemd:
+    daemon_reload: true
+
+- name: restart keepalived
+  ansible.builtin.service:
+    name: keepalived
+    state: restarted
+
+- name: restart haproxy
+  ansible.builtin.service:
+    name: haproxy
+    state: restarted

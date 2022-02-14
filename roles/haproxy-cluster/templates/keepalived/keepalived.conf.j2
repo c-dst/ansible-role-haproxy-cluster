@@ -1,0 +1,58 @@
+# Global Settings for notifications
+global_defs {
+    notification_email {
+        {{ keepalived_notification_email_to }}
+    }
+    notification_email_from {{ keepalived_notification_email_from }}
+    smtp_server {{ keepalived_smtp_server }}
+    smtp_connect_timeout 15
+    enable_script_security
+    script_user root
+}
+
+# Define the script used to check if haproxy is still working
+vrrp_script check_haproxy {
+    script "/usr/bin/killall -0 haproxy"
+    interval 2
+    weight 2
+}
+
+{% for instance in haproxy_service_config %}
+{# test if instance fqdn is valid #}
+{% if lookup('community.general.dig', instance ) != "NXDOMAIN" %}
+{% set keepalived = haproxy_service_config[instance].keepalived | default ('{}') %}
+{# test if keepalived is configured #}
+{% if keepalived | length > 0 %}
+vrrp_instance {{ instance }} {
+    interface {{ current_proxyhost.interface }}
+    state {{ current_proxyhost.state | upper }}
+
+    priority {{ current_proxyhost.priority | default ( 100 )}}
+    virtual_router_id {{ keepalived.id | default ( 1 ) }}
+
+    advert_int 1
+
+{% if keepalived_smtp_alert %}
+    smtp_alert
+{% endif %}
+
+{% if keepalived.authentication.auth_pass is defined %}
+    authentication {
+        auth_type {{ keepalived.authentication.auth_type | default ('AH') }}
+        auth_pass {{ keepalived.authentication.auth_pass }}
+    }
+{% endif %}
+
+    # The virtual ip address shared between the two loadbalancers
+    virtual_ipaddress {
+        {{ lookup('community.general.dig', instance ) }}
+    }
+
+    # Use the Defined Script to Check whether to initiate a fail over
+    track_script {
+        check_haproxy
+    }
+}
+{% endif %}
+{% endif %}
+{% endfor %}

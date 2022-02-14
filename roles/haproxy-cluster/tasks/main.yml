@@ -1,0 +1,110 @@
+---
+- name: Ensure task is run on tested distrib
+  assert:
+    that:
+      - ansible_distribution in ['Ubuntu']
+  tags: always
+
+- name: Ensure task is run on tested distrib release
+  assert:
+    that:
+      - ansible_distribution_version in ['20.04']
+  when: ansible_distribution == 'Ubuntu'
+  tags: always
+
+# Config check and facts settings
+- name: Ensure at lowest on cluster is defined
+  assert:
+    that:
+      - (haproxy_service_config | list | length) >= 1
+  tags: always
+
+- name: Ensure current host is present in cluster config
+  assert:
+    that:
+      - (haproxy_cluster | selectattr('fqdn', 'eq', ansible_fqdn) | list | length) == 1
+  tags: always
+
+- name: Retrieve current host settings from cluster config
+  ansible.builtin.set_fact:
+    current_proxyhost: "{{ (haproxy_cluster | selectattr('fqdn', 'eq', ansible_fqdn) | list)[0] }}"
+  tags: always
+
+- name: Determine if current server is a master or backup node
+  set_fact:
+    is_master: "{{ current_proxyhost.state | default( 'backup' ) == 'master' }}"
+    is_backup: "{{ current_proxyhost.state | default( 'backup' ) == 'backup' }}"
+  tags: always
+
+- name: sysctl setup
+  ansible.posix.sysctl:
+    name: '{{ item.key }}'
+    value: '{{ item.value }}'
+    sysctl_set: yes
+    state: present
+    reload: yes
+  loop:
+    - { key: net.ipv4.ip_forward,  value: 1 }
+
+# Keepalived
+- name: Keepalived
+  block:
+  - name: install keepalived
+    ansible.builtin.apt:
+      name: "{{ item }}"
+      state: present
+      update_cache: yes
+    loop: "{{ keepalived_packages }}"
+
+  - name: setup keepalived
+    block:
+    - name: create keepalived.conf
+      ansible.builtin.template:
+        src: keepalived/keepalived.conf.j2
+        dest: /etc/keepalived/keepalived.conf
+        validate: keepalived -t -f %s
+      notify:
+        - restart keepalived
+
+    # - name: setup firewall
+    #   debug:
+    #     msg: TBD - Firewall
+  tags: keepalived
+
+
+# HAProxy
+- name: HAProxy
+  block:
+  - name: add HAProxy repository
+    ansible.builtin.apt_repository:
+      repo: "{{ haproxy_apt_repository_url }}"
+      state: present
+      codename: "{{ ansible_distribution_release }}"
+
+  - name: install HAProxy
+    ansible.builtin.apt:
+      name: "{{ item }}"
+      state: present
+      update_cache: yes
+    loop: "{{ haproxy_packages }}"
+
+  - name: setup HAProxy
+    block:
+    - name: create haproxy.cfg
+      ansible.builtin.template:
+        src: haproxy/haproxy.cfg.j2
+        dest: /etc/haproxy/haproxy.cfg
+        validate: haproxy -c -f %s
+      notify:
+        - restart haproxy
+
+    # - name: setup firewall
+    #   debug:
+    #     msg: TBD - Firewall
+  tags: haproxy
+
+
+
+
+
+

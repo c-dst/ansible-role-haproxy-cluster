@@ -1,0 +1,76 @@
+---
+kernel_modules: []
+
+## Keepalived
+# Keepalived packages
+keepalived_packages:
+  - keepalived
+
+keepalived_smtp_alert: false
+keepalived_notification_email_from: root
+keepalived_notification_email_to: root
+keepalived_smtp_server: localhost
+
+## HAProxy
+# HAProxy version
+haproxy_version: 2.4
+
+# HAProxy ppa repository
+haproxy_apt_repository_url: "ppa:vbernat/haproxy-{{ haproxy_version }}"
+
+# HAProxy packages
+haproxy_packages:
+  - software-properties-common
+  - 'haproxy={{ haproxy_version }}.*'
+
+## Cluster configuration
+# HAProxy statistics web interface
+# enable web interface if set
+haproxy_statsistics_allowed_ips: []
+# haproxy_statsistics_allowed_ips:
+#   - 10.0.0.0/8
+
+# HAProxy Cluster configufation
+haproxy_cluster: []
+# haproxy_cluster:
+#   - fqdn:                             Required:  cluster node fqdn
+#     state:                            Optionnal: keepalived state - Value: (master / slave) - Default: slave
+#     interface:                        Required:  keepalived interface listen
+#     priority:                         Required:  Keepalived server priority - Value: integer
+
+# HAProxy cluster defaults and global configuration
+haproxy_cluster_config: {}
+# haproxy_cluster_config:               Not yet implemented
+#   defaults:                           Not yet implemented
+#     TBD
+#   global:                             Not yet implemented
+#     TBD
+
+# HAProxy configuration listen / frontend / backend
+haproxy_service_config: {}
+# haproxy_service_config:
+#   cluster.domain.tld:               Required:  cluster fqdn
+#     keepalived:                     Optionnal: if not set keepalived isn't configured
+#       id:                           Required:  cluster id - Value: integer
+#       authentication:               Required
+#         auth_type:                  Optionnal: authentification type - Value: AH/PASS - Default: AH
+#         auth_pass:                  Required:  authentification string/password
+#     haproxy:                        Required
+#       ports:                        Optionnal: frontend ports list and options to listen - Value: port number + options
+#         -
+#       port:                         Required:  frontend port and option, BECOME OPTIONNAL if port list is set - Value: port number + options - comment
+#       mode: tcp                     Optionnal: proxy mode - Value: tcp/http - Default: tcp
+#       frontend:
+#         options:                    Optionnal: frontend options list - Value: list of option name - Default: tcp mode: tcplog - http mode: httplog, dontlognull
+#           -
+#       backend:
+#         balance:                    Optionnal: backend balande mode - Value: roundrobin/leastconn - Default: roundrobin
+#         options:                    Optionnal: frontend option list - Value: list of option name - Default: tcp mode: tcp-check - http mode: httpchk
+#           -
+#         default-server:             Optionnal: global backends check param - Default: check
+#         http-check:                 Optionnal: global backends http-check param for http mode
+#         hosts:                      Required:  backend hosts list
+#           - fqdn:                   Required:  backend fqdn
+#             port:                   Required:  backend port
+#             check:                  Optionnal: backent specific check param
+#       listen:                       Not yet implemented
