@@ -1,0 +1,23 @@
+{% if item.value.certificate.inline_crt is defined %}
+{# inline cerficate #}
+{{ item.value.certificate.inline_crt }}
+{% if item.value.certificate.inline_key is defined %}
+{{ item.value.certificate.inline_key }}
+{% endif %}
+{% for ca in item.value.certificate.inline_cas | default ([]) %}
+{{ ca }}
+{% endfor %}
+{% else %}
+{# file cerficate #}
+{% if item.value.certificate.crt is defined %}
+{{ lookup ('file', item.value.certificate.crt) }}
+{% endif %}
+{% if item.value.certificate.key is defined %}
+{{ lookup ('file', item.value.certificate.key) }}
+{% endif %}
+{% for ca in item.value.certificate.cas | default ([]) %}
+{% if ca is defined %}
+{{ lookup ('file', ca) }}
+{% endif %}
+{% endfor %}
+{% endif %}

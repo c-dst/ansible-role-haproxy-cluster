@@ -90,6 +90,36 @@
 
   - name: setup HAProxy
     block:
+    - name: create ssl directory
+      ansible.builtin.file:
+        path: "{{ item.path }}"
+        state: directory
+        mode: "{{ item.mode }}"
+        owner: "{{ item.owner }}"
+        group: "{{ item.group }}"
+      loop:
+        - { path: "/etc/haproxy/ssl", mode: 'u=rwX,g=rX,o=', owner: root, group: root }
+
+    - name: create certificate file
+      ansible.builtin.template:
+        src: haproxy/certificate.j2
+        dest: "/etc/haproxy/ssl/{{ item.key }}.pem"
+      loop: "{{ haproxy_service_config | dict2items }}"
+      when: item.value.certificate is defined
+      no_log: true
+      notify:
+        - restart haproxy
+
+    - name: remove unnecessary certificate file
+      ansible.builtin.file:
+        path: "/etc/haproxy/ssl/{{ item.key }}.pem"
+        state: absent
+      loop: "{{ haproxy_service_config | dict2items }}"
+      when: item.value.certificate is not defined
+      no_log: true
+      notify:
+        - restart haproxy
+
     - name: create haproxy.cfg
       ansible.builtin.template:
         src: haproxy/haproxy.cfg.j2

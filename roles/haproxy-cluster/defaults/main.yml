@@ -23,28 +23,40 @@ haproxy_packages:
   - software-properties-common
   - 'haproxy={{ haproxy_version }}.*'
 
-## Cluster configuration
+### Cluster configuration
 # HAProxy statistics web interface
-# enable web interface if set
+# listen port
+haproxy_statsistics_port: 8404
+
+# set list to enable statistics web interface
 haproxy_statsistics_allowed_ips: []
 # haproxy_statsistics_allowed_ips:
 #   - 10.0.0.0/8
 
-# HAProxy Cluster configufation
+# secure statistics web interface with ssl
+haproxy_statsistics_ssl: false
+
+# HAProxy cluster configufation
 haproxy_cluster: []
 # haproxy_cluster:
-#   - fqdn:                             Required:  cluster node fqdn
-#     state:                            Optionnal: keepalived state - Value: (master / slave) - Default: slave
-#     interface:                        Required:  keepalived interface listen
-#     priority:                         Required:  Keepalived server priority - Value: integer
+#   - fqdn:                           Required:  cluster node fqdn
+#     state:                          Optionnal: keepalived state - Value: (master / slave) - Default: slave
+#     interface:                      Required:  keepalived interface listen
+#     priority:                       Required:  Keepalived server priority - Value: integer
 
 # HAProxy cluster defaults and global configuration
-haproxy_cluster_config: {}
-# haproxy_cluster_config:               Not yet implemented
-#   defaults:                           Not yet implemented
-#     TBD
-#   global:                             Not yet implemented
-#     TBD
+# HAProxy Cluster configufation
+haproxy_cluster_config:
+  global:
+    logs:
+      - log stdout local0
+      - log stdout local1 notice
+    ca-base: /etc/ssl/certs/
+    crt-base: /etc/haproxy/certs/
+  defaults:
+    timeout_connect: 5000
+    timeout_server: 50000
+    timeout_client: 50000
 
 # HAProxy configuration listen / frontend / backend
 haproxy_service_config: {}
@@ -55,22 +67,93 @@ haproxy_service_config: {}
 #       authentication:               Required
 #         auth_type:                  Optionnal: authentification type - Value: AH/PASS - Default: AH
 #         auth_pass:                  Required:  authentification string/password
+#     certificate:                    Required: inline x509 certificate take precedence of file
+#       inline_crt:                   Required: inline x509 certificate
+#       inline_key:                   Required: inline x509 certificate key
+#       inline_cas:                   Required: inline x509 ca certificate chain list
+#         -
+#       crt:                          Required: x509 certificate path - on ansible hosts
+#       key:                          Required: x509 certificate key
+#       cas:                          Required: x509 ca certificate chain list
+#         -
 #     haproxy:                        Required
 #       ports:                        Optionnal: frontend ports list and options to listen - Value: port number + options
 #         -
 #       port:                         Required:  frontend port and option, BECOME OPTIONNAL if port list is set - Value: port number + options - comment
-#       mode: tcp                     Optionnal: proxy mode - Value: tcp/http - Default: tcp
+#       mode:                         Optionnal: proxy mode - Value: tcp/http - Default: tcp
 #       frontend:
 #         options:                    Optionnal: frontend options list - Value: list of option name - Default: tcp mode: tcplog - http mode: httplog, dontlognull
+#           -
+#         ssl:                        Optionnal: with http mode - enable ssl on all port execpt 80/http
+#         acls:                       Optionnal: acls directive - Not Yen implemented
+#           -
+#         http_requests:              Optionnal: http-requests directive - Default: var haproxy_default_http_requests
 #           -
 #       backend:
 #         balance:                    Optionnal: backend balande mode - Value: roundrobin/leastconn - Default: roundrobin
 #         options:                    Optionnal: frontend option list - Value: list of option name - Default: tcp mode: tcp-check - http mode: httpchk
 #           -
-#         default-server:             Optionnal: global backends check param - Default: check
-#         http-check:                 Optionnal: global backends http-check param for http mode
+#         default_server:             Optionnal: global backends check param - Default: check
+#         http_check:                 Optionnal: global backends http-check param for http mode
 #         hosts:                      Required:  backend hosts list
 #           - fqdn:                   Required:  backend fqdn
 #             port:                   Required:  backend port
 #             check:                  Optionnal: backent specific check param
 #       listen:                       Not yet implemented
+
+
+# HAProxy default http-request param
+haproxy_default_http_requests:
+  - capture req.hdr(Host) len 100
+  - capture req.hdr(User-Agent) len 100
+  - capture ssl_fc_protocol len 10
+
+# HAProxy Frontend default option
+haproxy_default_frontend_options:
+  tcp: ['tcplog']
+  http: ['httplog', 'dontlognull']
+
+# HAProxy Backend default option
+haproxy_default_backend_options:
+  tcp: ['tcp-check']
+  http: ['httpchk']
+
+# HAProxy Backend default option
+haproxy_default_listen_options:
+  tcp: []
+  http: []
+
+
+# HAProxy - SSL Configuration
+haproxy_ssl_config: "https://ssl-config.mozilla.org/#server=haproxy&version={{ haproxy_version }}&config={{ haproxy_ssl_security_level }}&openssl=1.1.1k&guideline=5.6"
+
+# SSL level configuration
+haproxy_ssl_security_level: intermediate
+
+# SSL ciphers for configuration
+haproxy_ssl_ciphers:
+  moderne:
+    test: value
+    bind_ciphersuites: TLS_AES_128_GCM_SHA256:TLS_AES_256_GCM_SHA384:TLS_CHACHA20_POLY1305_SHA256
+    bind_options: prefer-client-ciphers no-sslv3 no-tlsv10 no-tlsv11 no-tlsv12 no-tls-tickets
+    server_ciphersuites: TLS_AES_128_GCM_SHA256:TLS_AES_256_GCM_SHA384:TLS_CHACHA20_POLY1305_SHA256
+    server_options: no-sslv3 no-tlsv10 no-tlsv11 no-tlsv12 no-tls-tickets
+  intermediate:
+    test: value
+    bind_ciphers: ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384
+    bind_ciphersuites: TLS_AES_128_GCM_SHA256:TLS_AES_256_GCM_SHA384:TLS_CHACHA20_POLY1305_SHA256
+    bind_options: prefer-client-ciphers no-sslv3 no-tlsv10 no-tlsv11 no-tls-tickets
+    server_ciphers: ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA25:DHE-RSA-AES256-GCM-SHA384
+    server_ciphersuites: TLS_AES_128_GCM_SHA256:TLS_AES_256_GCM_SHA384:TLS_CHACHA20_POLY1305_SHA256
+    server_options: no-sslv3 no-tlsv10 no-tlsv11 no-tls-tickets
+  old:
+    test: value
+    bind_ciphers: ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384:DHE-RSA-CHACHA20-POLY1305:ECDHE-ECDSA-AES128-SHA256:ECDHE-RSA-AES128-SHA256:ECDHE-ECDSA-AES128-SHA:ECDHE-RSA-AES128-SHA:ECDHE-ECDSA-AES256-SHA384:ECDHE-RSA-AES256-SHA384:ECDHE-ECDSA-AES256-SHA:ECDHE-RSA-AES256-SHA:DHE-RSA-AES128-SHA256:DHE-RSA-AES256-SHA256:AES128-GCM-SHA256:AES256-GCM-SHA384:AES128-SHA256:AES256-SHA256:AES128-SHA:AES256-SHA:DES-CBC3-SHA
+    bind_ciphersuites: TLS_AES_128_GCM_SHA256:TLS_AES_256_GCM_SHA384:TLS_CHACHA20_POLY1305_SHA256
+    bind_options: no-sslv3 no-tls-tickets
+    server_ciphers: ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384:DHE-RSA-CHACHA20-POLY1305:ECDHE-ECDSA-AES128-SHA256:ECDHE-RSA-AES128-SHA256:ECDHE-ECDSA-AES128-SHA:ECDHE-RSA-AES128-SHA:ECDHE-ECDSA-AES256-SHA384:ECDHE-RSA-AES256-SHA384:ECDHE-ECDSA-AES256-SHA:ECDHE-RSA-AES256-SHA:DHE-RSA-AES128-SHA256:DHE-RSA-AES256-SHA256:AES128-GCM-SHA256:AES256-GCM-SHA384:AES128-SHA256:AES256-SHA256:AES128-SHA:AES256-SHA:DES-CBC3-SHA
+    server_ciphersuites: TLS_AES_128_GCM_SHA256:TLS_AES_256_GCM_SHA384:TLS_CHACHA20_POLY1305_SHA256
+    server_options: no-sslv3 no-tls-tickets
+
+# HSTS default max age param
+haproxy_default_hsts_max_age: 63072000
