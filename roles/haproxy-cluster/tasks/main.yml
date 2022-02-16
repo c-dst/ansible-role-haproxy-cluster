@@ -120,6 +120,14 @@
       notify:
         - restart haproxy
 
+    - name: create dhparam file "{{ haproxy_dhparams.file }}"
+      ansible.builtin.template:
+        src: haproxy/dhparam.txt.j2
+        dest: "{{ haproxy_dhparams.file }}"
+      when: haproxy_dhparams is defined 
+      notify:
+        - restart haproxy
+
     - name: create haproxy.cfg
       ansible.builtin.template:
         src: haproxy/haproxy.cfg.j2

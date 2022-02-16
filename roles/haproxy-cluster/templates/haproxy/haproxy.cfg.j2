@@ -38,8 +38,10 @@ global
     ssl-default-server-options {{ haproxy_ssl_ciphers[haproxy_ssl_security_level].server_options }}
 {% endif %}
 
-    # curl https://ssl-config.mozilla.org/ffdhe2048.txt > /path/to/dhparam
-    # ssl-dh-param-file /etc/haproxy/dhparam.txt
+{% if haproxy_dhparams.file is defined %}
+    # SSL dhparam
+    ssl-dh-param-file {{ haproxy_dhparams.file }}
+{% endif %}
 
 ## Defaults
 defaults
@@ -49,18 +51,14 @@ defaults
     timeout client  {{ haproxy_cluster_config.defaluts.timeout_client | default (50000) }}
     timeout server  {{ haproxy_cluster_config.defaluts.timeout_client | default (50000) }}
 
-    errorfile 400 /etc/haproxy/errors/400.http
-    errorfile 403 /etc/haproxy/errors/403.http
-    errorfile 408 /etc/haproxy/errors/408.http
-    errorfile 500 /etc/haproxy/errors/500.http
-    errorfile 502 /etc/haproxy/errors/502.http
-    errorfile 503 /etc/haproxy/errors/503.http
-    errorfile 504 /etc/haproxy/errors/504.http
+{% for error in haproxy_cluster_config.defaults.errorfiles %}
+    errorfile {{ error }} /etc/haproxy/errors/{{ error }}.http
+{% endfor %}
 
 {% if haproxy_statsistics_allowed_ips | length > 0 %}
 ## Frontend front_statistics
 frontend front_statistics
-    bind {{ lookup('community.general.dig', ansible_fqdn ) }}:{{ haproxy_statsistics_port }} {% if haproxy_statsistics_ssl %}ssl crt {{ network.hostname }}.{{network.hostdomain }}.pem alpn h2,http/1.1{% endif %}
+    bind {{ lookup('community.general.dig', ansible_fqdn ) }}:{{ haproxy_statsistics_port }} {% if haproxy_statsistics_ssl %}ssl crt {{ ansible_fqdn }}.pem alpn h2,http/1.1{% endif %}
 
 
     mode http

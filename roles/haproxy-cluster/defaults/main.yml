@@ -57,6 +57,13 @@ haproxy_cluster_config:
     timeout_connect: 5000
     timeout_server: 50000
     timeout_client: 50000
+    errorfiles:
+      - 400
+      - 408
+      - 500
+      - 502
+      - 503
+      - 504
 
 # HAProxy configuration listen / frontend / backend
 haproxy_service_config: {}
@@ -154,6 +161,11 @@ haproxy_ssl_ciphers:
     server_ciphers: ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384:DHE-RSA-CHACHA20-POLY1305:ECDHE-ECDSA-AES128-SHA256:ECDHE-RSA-AES128-SHA256:ECDHE-ECDSA-AES128-SHA:ECDHE-RSA-AES128-SHA:ECDHE-ECDSA-AES256-SHA384:ECDHE-RSA-AES256-SHA384:ECDHE-ECDSA-AES256-SHA:ECDHE-RSA-AES256-SHA:DHE-RSA-AES128-SHA256:DHE-RSA-AES256-SHA256:AES128-GCM-SHA256:AES256-GCM-SHA384:AES128-SHA256:AES256-SHA256:AES128-SHA:AES256-SHA:DES-CBC3-SHA
     server_ciphersuites: TLS_AES_128_GCM_SHA256:TLS_AES_256_GCM_SHA384:TLS_CHACHA20_POLY1305_SHA256
     server_options: no-sslv3 no-tls-tickets
+
+# HAProxy - SSL dhparam
+haproxy_dhparams: 
+  file: /etc/haproxy/dhparam.txt
+  content: "{{ lookup ('url', 'https://ssl-config.mozilla.org/ffdhe2048.txt', split_lines=False) }}"
 
 # HSTS default max age param
 haproxy_default_hsts_max_age: 63072000
