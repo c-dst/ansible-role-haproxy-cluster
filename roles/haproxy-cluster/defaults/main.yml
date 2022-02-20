@@ -33,7 +33,7 @@ haproxy_statsistics_allowed_ips: []
 # haproxy_statsistics_allowed_ips:
 #   - 10.0.0.0/8
 
-# secure statistics web interface with ssl
+# ssl secure admin / statistic web interface
 haproxy_statsistics_ssl: false
 
 # HAProxy cluster configufation
@@ -89,23 +89,27 @@ haproxy_service_config: {}
 #       port:                         Required:  frontend port and option, BECOME OPTIONNAL if port list is set - Value: port number + options - comment
 #       mode:                         Optionnal: proxy mode - Value: tcp/http - Default: tcp
 #       frontend:
-#         options:                    Optionnal: frontend options list - Value: list of option name - Default: tcp mode: tcplog - http mode: httplog, dontlognull
-#           -
 #         ssl:                        Optionnal: with http mode - enable ssl on all port execpt 80/http
-#         acls:                       Optionnal: acls directive - Not Yen implemented
+#         options:                    Optionnal: frontend options list - Value: list of option name - Default: tcp mode: tcplog - http mode: httplog, dontlognull
 #           -
 #         http_requests:              Optionnal: http-requests directive - Default: var haproxy_default_http_requests
 #           -
-#       backend:
-#         balance:                    Optionnal: backend balande mode - Value: roundrobin/leastconn - Default: roundrobin
-#         options:                    Optionnal: frontend option list - Value: list of option name - Default: tcp mode: tcp-check - http mode: httpchk
+#         acls:                       Optionnal: acl directive (https://www.haproxy.com/blog/introduction-to-haproxy-acls/)
 #           -
-#         default_server:             Optionnal: global backends check param - Default: check
-#         http_check:                 Optionnal: global backends http-check param for http mode
-#         hosts:                      Required:  backend hosts list
-#           - fqdn:                   Required:  backend fqdn
-#             port:                   Required:  backend port
-#             check:                  Optionnal: backent specific check param
+#         use_backends:               Optionnal: use_backend directive with acls
+#           -
+#         default_backend:            Optionnal: set default backend with the first or last backend defined in backends list - Value (first / last) - Default first
+#       backends:
+#         - balance:                  Optionnal: backend balande mode - Value: roundrobin/leastconn - Default: roundrobin
+#           options:                  Optionnal: frontend option list - Value: list of option name - Default: tcp mode: tcp-check - http mode: httpchk
+#             -
+#           default_server:           Optionnal: global backends check param - Default: check
+#           http_checks:              Optionnal: global backends http-check param for http mode (https://www.haproxy.com/blog/how-to-enable-health-checks-in-haproxy/)
+#             -
+#           hosts:                    Required:  backend hosts list
+#             - fqdn:                 Required:  backend fqdn
+#               port:                 Required:  backend port
+#               check:                Optionnal: backent specific check param
 #       listen:                       Not yet implemented
 
 
@@ -160,7 +164,7 @@ haproxy_ssl_ciphers:
     server_options: no-sslv3 no-tls-tickets
 
 # HAProxy - SSL dhparam
-haproxy_dhparams: 
+haproxy_dhparams:
   file: /etc/haproxy/dhparam.txt
   content: "{{ lookup ('url', 'https://ssl-config.mozilla.org/ffdhe2048.txt', split_lines=False) }}"
 
