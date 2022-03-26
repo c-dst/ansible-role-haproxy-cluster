@@ -98,7 +98,7 @@
         owner: "{{ item.owner }}"
         group: "{{ item.group }}"
       loop:
-        - { path: "/etc/haproxy/ssl", mode: 'u=rwX,g=rX,o=', owner: root, group: root }
+        - { path: "/etc/haproxy/ssl", mode: 'u=rwX,g=rX,o=', owner: "{{ haproxy_user }}", group: "{{ haproxy_group }}" }
 
     - name: create certificate file
       ansible.builtin.template:
