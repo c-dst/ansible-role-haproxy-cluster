@@ -1,15 +1,15 @@
 # {{ ansible_managed }}
 ## Global
 global
-{% for log in haproxy_cluster_config.global.logs %}
+{% for log in haproxy_cluster_config.global.logs | default (["log stdout local0", "log stdout local1 notice"]) %}
     {{ log }}
 {% endfor %}
     chroot /var/lib/haproxy
 
     stats socket /run/haproxy/admin.sock mode 660 level admin expose-fd listeners
     stats timeout 30s
-    user haproxy
-    group haproxy
+    user {{ haproxy_user }}
+    group {{ haproxy_group }}
     daemon
 
     # HAProxy Profiling
@@ -48,11 +48,11 @@ global
 defaults
     log     global
 
-    timeout connect {{ haproxy_cluster_config.defaults.timeout_connect | default (5000)  }}
-    timeout client  {{ haproxy_cluster_config.defaluts.timeout_client | default (50000) }}
-    timeout server  {{ haproxy_cluster_config.defaluts.timeout_client | default (50000) }}
+    timeout connect {{ haproxy_cluster_config.defaults.timeout_connect | default (5000) }}
+    timeout client  {{ haproxy_cluster_config.defaults.timeout_client | default (50000) }}
+    timeout server  {{ haproxy_cluster_config.defaults.timeout_client | default (50000) }}
 
-{% for error in haproxy_cluster_config.defaults.errorfiles %}
+{% for error in haproxy_cluster_config.errorfiles | default ([400,  408, 500, 502, 503, 504]) %}
     errorfile {{ error }} /etc/haproxy/errors/{{ error }}.http
 {% endfor %}
 
@@ -81,7 +81,6 @@ frontend front_statistics
     stats admin if allowed_stats_ips
 {% endif%}
 
-
 {% for instance in haproxy_service_config %}
 {% set haproxy = haproxy_service_config[instance].haproxy | default ('{}') %}
 {% if haproxy | length > 0 %}
@@ -97,13 +96,11 @@ frontend front_statistics
 {% set mode = "tcp" %}
 {% endif %}
 {# check config directive backend or listen #}
-{% set param_backend = haproxy.backend | default (false) %}
+{% set param_backend = haproxy.backends | default (false) %}
 {% set param_listen = haproxy.listen | default (false) %}
 {% if param_backend %}
 {# set backend name - Default : instance #}
 {% set backend_name = instance %}
-{# set balance - Default : roundrobin#}
-{% set balance = haproxy.backend.balance | default ('roundrobin') %}
 {# set ssl / https params - Default : false #}
 {% if mode == 'http' %}
 {% set is_http = ((haproxy.ports | default ( [ haproxy.port ] ) | select ('eq', 80 )|list) | length )| bool %}
@@ -139,7 +136,7 @@ frontend front_{{ instance }}
 {# redirect - force https #}
 {% if ( is_http and is_https ) %}
     # force https redirect
-    redirect scheme https code 301 if !{ ssl_fc }
+    http-request redirect scheme https code 301 if !{ ssl_fc }
 
 {% endif %}
 {# HSTS max age #}
@@ -154,8 +151,8 @@ frontend front_{{ instance }}
     acl {{ acl }}
 {% endfor %}
 {# use backend #}
-{% for backend in haproxy.frontend.use_backends | default ( '' )%}
-    use_backend {{ backend }}
+{% for backend in haproxy.frontend.use_backends | default ( [] )%}
+    use_backend back_{{ backend_name }}_{{ backend.number }} if {{ backend.condition }}
 {% endfor %}
 
 {# Set default backend #}
@@ -168,6 +165,8 @@ frontend front_{{ instance }}
 {% endif %}
 
 {% for backend in haproxy.backends %}
+{# set balance - Default : roundrobin#}
+{% set balance = backend.balance | default ('roundrobin') %}
 {% if loop.length > 1 %}{% set backend_name = instance + "_" ~ loop.index -%}{% endif %}
 ## Backend back_{{ backend_name }}
 backend back_{{ backend_name }}

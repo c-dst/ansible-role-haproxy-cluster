@@ -124,7 +124,16 @@
       ansible.builtin.template:
         src: haproxy/dhparam.txt.j2
         dest: "{{ haproxy_dhparams.file }}"
-      when: haproxy_dhparams is defined 
+      when: haproxy_dhparams is defined
+      notify:
+        - restart haproxy
+
+    - name: copy custom error files
+      ansible.builtin.template:
+        src: "errorfiles/{{ item }}.http"
+        dest: "/etc/haproxy/errors/"
+      loop: "{{ haproxy_cluster_config.errorfiles }}"
+      when: haproxy_cluster_config.errorfiles is defined
       notify:
         - restart haproxy
 
@@ -140,9 +149,3 @@
     #   debug:
     #     msg: TBD - Firewall
   tags: haproxy
-
-
-
-
-
-

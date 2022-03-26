@@ -18,6 +18,9 @@ haproxy_version: 2.4
 # HAProxy ppa repository
 haproxy_apt_repository_url: "ppa:vbernat/haproxy-{{ haproxy_version }}"
 
+haproxy_user: haproxy
+haproxy_group: haproxy
+
 # HAProxy packages
 haproxy_packages:
   - software-properties-common
@@ -44,31 +47,26 @@ haproxy_cluster: []
 #     interface:                      Required:  keepalived interface listen
 #     priority:                       Required:  Keepalived server priority - Value: integer
 
-# HAProxy cluster defaults and global configuration
-# HAProxy Cluster configufation
-haproxy_cluster_config:
-  global:
-    logs:
-      - log stdout local0
-      - log stdout local1 notice
-    ca-base: /etc/ssl/certs/
-    crt-base: /etc/haproxy/certs/
-  defaults:
-    timeout_connect: 5000
-    timeout_server: 50000
-    timeout_client: 50000
-    errorfiles:
-      - 400
-      - 408
-      - 500
-      - 502
-      - 503
-      - 504
+# HAProxy cluster global / service and defaults configuration
+## HAProxy Cluster global configufation
+haproxy_cluster_config: []
+# haproxy_cluster_config: []
+#   global:
+#     logs:
+#       -                             Optionnal: log directive list - Default: log stdout local0 and log stdout local1 notice
+#     ca-base:                        Optionnal: x509 certificate authority base path - Default: /etc/ssl/certs/
+#     crt-base:                       Optionnal: x509 ssl certificate base path - Default: /etc/haproxy/certs/
+#   defaults:
+#     timeout_connect:                Optionnal: connection timeout - Default: 5000
+#     timeout_server:                 Optionnal: server timeout - Default: 50000
+#     timeout_client:                 Optionnal: client timeout - Default: 50000
+#     errorfiles:                     Optionnal: list of managed error files - Default: 400 / 408 / 500 / 502 / 503 / 504
+#       -
 
-# HAProxy configuration listen / frontend / backend
+## HAProxy service configuration listen / frontend / backend
 haproxy_service_config: {}
 # haproxy_service_config:
-#   cluster.domain.tld:               Required:  cluster fqdn
+#   service.domain.tld:               Required:  service cluster fqdn
 #     keepalived:                     Optionnal: if not set keepalived isn't configured
 #       id:                           Required:  cluster id - Value: integer
 #       authentication:               Required
@@ -84,24 +82,25 @@ haproxy_service_config: {}
 #       cas:                          Required: x509 ca certificate chain list
 #         -
 #     haproxy:                        Required
-#       ports:                        Optionnal: frontend ports list and options to listen - Value: port number + options
+#       port:                         Required:  frontend port and option - Value: port number + options
+#       ports:                        Optionnal: take precedance of port parameter, frontend ports list and options to listen - Value: port number + options
 #         -
-#       port:                         Required:  frontend port and option, BECOME OPTIONNAL if port list is set - Value: port number + options - comment
 #       mode:                         Optionnal: proxy mode - Value: tcp/http - Default: tcp
 #       frontend:
-#         ssl:                        Optionnal: with http mode - enable ssl on all port execpt 80/http
-#         options:                    Optionnal: frontend options list - Value: list of option name - Default: tcp mode: tcplog - http mode: httplog, dontlognull
+#         ssl:                        Optionnal: with http mode - enable ssl on all port execpt 80/http - Default: false
+#         options:                    Optionnal: frontend options list - Value: list of option name - Default: var haproxy_default_frontend_options
 #           -
 #         http_requests:              Optionnal: http-requests directive - Default: var haproxy_default_http_requests
 #           -
 #         acls:                       Optionnal: acl directive (https://www.haproxy.com/blog/introduction-to-haproxy-acls/)
 #           -
-#         use_backends:               Optionnal: use_backend directive with acls
-#           -
+#         use_backends:               Optionnal: use_backend with acls
+#           - number:                 Required:  backend number
+#             condition:              Required:  acl condition rule
 #         default_backend:            Optionnal: set default backend with the first or last backend defined in backends list - Value (first / last) - Default first
 #       backends:
 #         - balance:                  Optionnal: backend balande mode - Value: roundrobin/leastconn - Default: roundrobin
-#           options:                  Optionnal: frontend option list - Value: list of option name - Default: tcp mode: tcp-check - http mode: httpchk
+#           options:                  Optionnal: frontend option list - Value: list of option name - Default: var haproxy_default_backend_options
 #             -
 #           default_server:           Optionnal: global backends check param - Default: check
 #           http_checks:              Optionnal: global backends http-check param for http mode (https://www.haproxy.com/blog/how-to-enable-health-checks-in-haproxy/)
@@ -122,7 +121,7 @@ haproxy_default_http_requests:
 # HAProxy Frontend default option
 haproxy_default_frontend_options:
   tcp: ['tcplog']
-  http: ['httplog', 'dontlognull']
+  http: ['httplog', 'dontlognull', 'forwardfor']
 
 # HAProxy Backend default option
 haproxy_default_backend_options:
