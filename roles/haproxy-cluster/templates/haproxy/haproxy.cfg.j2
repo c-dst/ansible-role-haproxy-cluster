@@ -61,6 +61,12 @@ defaults
 frontend front_statistics
     bind {{ lookup('community.general.dig', ansible_fqdn ) }}:{{ haproxy_statsistics_port }} {% if haproxy_statsistics_ssl %}ssl crt {{ ansible_fqdn }}.pem alpn h2,http/1.1{% endif %}
 
+{% if haproxy_statsistics_bind_service %}
+{% for instance in haproxy_service_config %}
+    bind {{ lookup('community.general.dig', instance ) }}:{{ haproxy_statsistics_port }} {% if haproxy_statsistics_ssl %}ssl crt {{ instance }}.pem alpn h2,http/1.1{% endif %}
+{% endfor %}
+{% endif %}
+
 
     mode http
     option httplog
@@ -150,9 +156,20 @@ frontend front_{{ instance }}
 {% for acl in haproxy.frontend.acls | default ( '' )%}
     acl {{ acl }}
 {% endfor %}
-{# use backend #}
-{% for backend in haproxy.frontend.use_backends | default ( [] )%}
-    use_backend back_{{ backend_name }}_{{ backend.number }} if {{ backend.condition }}
+
+{# use backend with conditions #}
+{% for backend in haproxy.frontend.use_backends | default ( [] ) %}
+{% if ( haproxy.backends | list | length == 1 and backend.number is not defined ) or haproxy.backends | list | length == 1 %}
+{# use_backend directive with only one backend #}
+    use_backend back_{{ backend_name }} if {{ backend.condition }}
+{%else %}
+{# use_backend directive with more than one backend #}
+{% if backend.condition is defined and backend.number is defined %}
+    use_backend back_{{ backend_name }}_{{ backend.number  }} if {{ backend.condition | default ('') }}
+{% else %}
+#    ERROR : backend number and backend condition must be set 
+{% endif %}
+{% endif %}
 {% endfor %}
 
 {# Set default backend #}

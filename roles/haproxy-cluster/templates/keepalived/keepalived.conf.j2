@@ -37,12 +37,10 @@ vrrp_instance {{ instance }} {
     smtp_alert
 {% endif %}
 
-{% if keepalived.authentication.auth_pass is defined %}
     authentication {
         auth_type {{ keepalived.authentication.auth_type | default ('AH') }}
-        auth_pass {{ keepalived.authentication.auth_pass }}
+        auth_pass {{ keepalived.authentication.auth_pass | default ( keepalived_auth_pass )}}
     }
-{% endif %}
 
     # The virtual ip address shared between the two loadbalancers
     virtual_ipaddress {

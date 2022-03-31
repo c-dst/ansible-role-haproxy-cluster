@@ -11,6 +11,8 @@ keepalived_notification_email_from: root
 keepalived_notification_email_to: root
 keepalived_smtp_server: localhost
 
+keepalived_auth_pass: "default-auth-password"
+
 ## HAProxy
 # HAProxy version
 haproxy_version: 2.4
@@ -30,6 +32,8 @@ haproxy_packages:
 # HAProxy statistics web interface
 # listen port
 haproxy_statsistics_port: 8404
+# bind service name
+haproxy_statsistics_bind_service: true
 
 # set list to enable statistics web interface
 haproxy_statsistics_allowed_ips: []
