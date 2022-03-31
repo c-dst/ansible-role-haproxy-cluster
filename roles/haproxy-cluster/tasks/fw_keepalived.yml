@@ -1,0 +1,13 @@
+---
+
+- name: Firewall firewalld Keepalived
+  block:
+  - name: Enable protocol VRRP
+    ansible.posix.firewalld:
+      rich_rule: "rule family='ipv4' protocol value='vrrp' accept"
+      zone: 'public'
+      state: enabled
+      permanent: yes
+      immediate: yes
+  when: which_firewall == "firewalld"
+  tags: keepalived

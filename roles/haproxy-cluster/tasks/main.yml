@@ -1,12 +1,12 @@
 ---
 - name: Ensure task is run on tested distrib
-  assert:
+  ansible.builtin.assert:
     that:
       - ansible_distribution in ['Ubuntu']
   tags: always
 
 - name: Ensure task is run on tested distrib release
-  assert:
+  ansible.builtin.assert:
     that:
       - ansible_distribution_version in ['20.04']
   when: ansible_distribution == 'Ubuntu'
@@ -14,13 +14,13 @@
 
 # Config check and facts settings
 - name: Ensure at lowest on cluster is defined
-  assert:
+  ansible.builtin.assert:
     that:
       - (haproxy_service_config | list | length) >= 1
   tags: always
 
 - name: Ensure current host is present in cluster config
-  assert:
+  ansible.builtin.assert:
     that:
       - (haproxy_cluster | selectattr('fqdn', 'eq', ansible_fqdn) | list | length) == 1
   tags: always
@@ -31,9 +31,13 @@
   tags: always
 
 - name: Determine if current server is a master or backup node
-  set_fact:
+  ansible.builtin.set_fact:
     is_master: "{{ current_proxyhost.state | default( 'backup' ) == 'master' }}"
     is_backup: "{{ current_proxyhost.state | default( 'backup' ) == 'backup' }}"
+  tags: always
+
+- name: Determine installed firewall
+  ansible.builtin.import_tasks: check_firewall.yml
   tags: always
 
 - name: sysctl setup
@@ -66,10 +70,13 @@
       notify:
         - restart keepalived
 
-    # - name: setup firewall
-    #   debug:
-    #     msg: TBD - Firewall
   tags: keepalived
+
+- name: update firewall rules - Keepalived
+  ansible.builtin.import_tasks: fw_keepalived.yml
+  tags:
+    - firewall
+    - keepalived
 
 
 # HAProxy
@@ -145,7 +152,10 @@
       notify:
         - restart haproxy
 
-    # - name: setup firewall
-    #   debug:
-    #     msg: TBD - Firewall
   tags: haproxy
+
+- name: update firewall rules - Haproxy
+  ansible.builtin.import_tasks: fw_haproxy.yml
+  tags:
+    - firewall
+    - haproxy
