@@ -37,7 +37,7 @@
   tags: always
 
 - name: Determine installed firewall
-  ansible.builtin.import_tasks: check_firewall.yml
+  import_tasks: check_firewall.yml
   tags: always
 
 - name: sysctl setup
@@ -73,7 +73,7 @@
   tags: keepalived
 
 - name: update firewall rules - Keepalived
-  ansible.builtin.import_tasks: fw_keepalived.yml
+  import_tasks: fw_keepalived.yml
   tags:
     - firewall
     - keepalived
@@ -155,7 +155,7 @@
   tags: haproxy
 
 - name: update firewall rules - Haproxy
-  ansible.builtin.import_tasks: fw_haproxy.yml
+  import_tasks: fw_haproxy.yml
   tags:
     - firewall
     - haproxy
