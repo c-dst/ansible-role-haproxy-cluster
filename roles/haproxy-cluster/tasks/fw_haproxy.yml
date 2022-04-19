@@ -19,9 +19,9 @@
   #     state: enabled
   #     permanent: yes
   #     immediate: yes
-  #   when: haproxy_service_config[item].haproxy.port is defined
   #   loop: "{{ haproxy_service_config | list }}"
-
+  #   when: haproxy_service_config[item].haproxy.port is defined
+  
   # - name: Allow haproxy service frontend
   #   # ansible.posix.firewalld:
   #   debug:
