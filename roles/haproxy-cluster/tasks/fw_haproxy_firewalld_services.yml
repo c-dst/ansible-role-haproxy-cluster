@@ -1,0 +1,21 @@
+---
+
+- name: Allow haproxy service 'port'
+  ansible.posix.firewalld:
+    rich_rule: "rule family='ipv4' destination address={{ lookup('community.general.dig', item) }} port port='{{ haproxy_service_config[item].haproxy.port }}' protocol='tcp' accept"
+    zone: "{{ fw_zone_item }}"
+    state: enabled
+    permanent: yes
+    immediate: yes
+  loop: "{{ haproxy_service_config | list }}"
+  when: haproxy_service_config[item].haproxy.port is defined
+
+# - name: Allow haproxy service 'ports'
+#   ansible.posix.firewalld:
+#     rich_rule: "rule family='ipv4' destination address={{ lookup('community.general.dig', item) }} port port='{ {{ haproxy_service_config[item].haproxy.ports | join (',') }} }' protocol='tcp' accept"
+#     zone: "{{ fw_zone_item }}"
+#     state: enabled
+#     permanent: yes
+#     immediate: yes
+#   loop: "{{ haproxy_service_config | list }}"
+#   when: haproxy_service_config[item].haproxy.ports is defined

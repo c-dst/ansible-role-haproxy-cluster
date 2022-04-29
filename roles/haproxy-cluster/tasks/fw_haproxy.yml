@@ -2,36 +2,27 @@
 
 - name: Firewall firewalld haproxy
   block:
+  - name: set default firewalld zone
+    set_fact:
+    firewalld_zones: 
+        - public
+    when: firewalld_zones is not defined
+
   - name: Allow haproxy statsistics frontend
     ansible.posix.firewalld:
       rich_rule: "rule family='ipv4' port port='{{ haproxy_statsistics_port }}' protocol='tcp' accept"
-      zone: 'public'
+      zone: "{{ item }}"
       state: enabled
       permanent: yes
       immediate: yes
+    loop: "{{ firewalld_zones | list }}"
     when: haproxy_statsistics_allowed_ips | length > 0
 
-  # To fix
-  # - name: Allow haproxy service frontend
-  #   ansible.posix.firewalld:
-  #     rich_rule: "rule family='ipv4' port port='{{ haproxy_service_config[item].haproxy.port }}' protocol='tcp' accept"
-  #     zone: 'public'
-  #     state: enabled
-  #     permanent: yes
-  #     immediate: yes
-  #   loop: "{{ haproxy_service_config | list }}"
-  #   when: haproxy_service_config[item].haproxy.port is defined
-  
-  # - name: Allow haproxy service frontend
-  #   # ansible.posix.firewalld:
-  #   debug:
-  #     msg: rich_rule="rule family='ipv4' port port='{{ item }}' protocol='tcp' accept"
-  #     # zone: 'insaservices'
-  #     # state: enabled
-  #     # permanent: yes
-  #     # immediate: yes
-  #   loop: "{{ haproxy_service_config | list }}"
-  #   when: haproxy_service_config[item].haproxy.ports is defined
+  - name: Allow haproxy services over firewalld zones
+    include_tasks: fw_haproxy_firewalld_services.yml
+    loop_control:
+      loop_var: fw_zone_item
+    loop: "{{ firewalld_zones | list }}"
 
   when: which_firewall == "firewalld"
   tags: haproxy

@@ -2,12 +2,20 @@
 
 - name: Firewall firewalld Keepalived
   block:
+  - name: set default firewalld zone
+    set_fact:
+    firewalld_zones: 
+        - public
+    when: firewalld_zones is not defined
+
   - name: Enable protocol VRRP
     ansible.posix.firewalld:
       rich_rule: "rule family='ipv4' protocol value='vrrp' accept"
-      zone: 'public'
+      zone: "{{ item }}"
       state: enabled
       permanent: yes
       immediate: yes
+    loop: "{{ firewalld_zones | list }}"
+
   when: which_firewall == "firewalld"
   tags: keepalived
