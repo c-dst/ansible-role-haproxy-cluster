@@ -17,7 +17,5 @@
     state: enabled
     permanent: yes
     immediate: yes
-  with_subelements: 
-    - "{{ haproxy_service_config | dict2items }}"
-    - value.haproxy.ports
+  loop: "{{ haproxy_service_config | dict2items | subelements ('value.haproxy.ports', {'skip_missing': True}) }}"
   when: haproxy_service_config[item.0.key].haproxy.ports is defined and haproxy_service_config[item.0.key].haproxy.port is not defined
