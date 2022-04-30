@@ -1,10 +1,9 @@
 ---
-
 - name: Firewall firewalld Keepalived
   block:
   - name: set default firewalld zone
     set_fact:
-    firewalld_zones: 
+      firewalld_zones: 
         - public
     when: firewalld_zones is not defined
 
