@@ -1,5 +1,4 @@
 ---
-
 - name: Allow haproxy service 'port'
   ansible.posix.firewalld:
     rich_rule: "rule family='ipv4' destination address={{ lookup('community.general.dig', item) }} port port='{{ haproxy_service_config[item].haproxy.port }}' protocol='tcp' accept"

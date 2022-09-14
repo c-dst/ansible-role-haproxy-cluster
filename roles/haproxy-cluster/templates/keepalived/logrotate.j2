@@ -1,0 +1,10 @@
+{{ keepalived_log_status }} {
+    daily
+    rotate 7
+    missingok
+    notifempty
+    compress
+    delaycompress
+    postrotate
+    endscript
+}

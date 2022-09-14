@@ -13,6 +13,16 @@ keepalived_smtp_server: localhost
 
 keepalived_auth_pass: "default-auth-password"
 
+# User used to run script 
+keepalived_script_user: nobody
+
+# Switch from multicast to unicast redudancy
+keepalived_vrrp_unicast: false
+
+# Log
+keepalived_log_path: "/var/log/keepalived" 
+keepalived_log_status: "{{ keepalived_log_path }}/status" 
+
 ## HAProxy
 # HAProxy version
 haproxy_version: 2.4
@@ -76,14 +86,15 @@ haproxy_service_config: {}
 #       authentication:               Required
 #         auth_type:                  Optionnal: authentification type - Value: AH/PASS - Default: AH
 #         auth_pass:                  Required:  authentification string/password
-#     certificate:                    Required: inline x509 certificate take precedence of file
-#       inline_crt:                   Required: inline x509 certificate
-#       inline_key:                   Required: inline x509 certificate key
-#       inline_cas:                   Required: inline x509 ca certificate chain list
+#       advertisements_interval       Optionnal: advertisements interval - Value: integer - Default: 1
+#     certificate:                    Required:  inline x509 certificate take precedence of file
+#       inline_crt:                   Required:  inline x509 certificate
+#       inline_key:                   Required:  inline x509 certificate key
+#       inline_cas:                   Required:  inline x509 ca certificate chain list
 #         -
-#       crt:                          Required: x509 certificate path - on ansible hosts
-#       key:                          Required: x509 certificate key
-#       cas:                          Required: x509 ca certificate chain list
+#       crt:                          Required:  x509 certificate path - on ansible hosts
+#       key:                          Required:  x509 certificate key
+#       cas:                          Required:  x509 ca certificate chain list
 #         -
 #     haproxy:                        Required
 #       port:                         Required:  frontend port and option - Value: port number + options

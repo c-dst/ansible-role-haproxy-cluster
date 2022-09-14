@@ -25,5 +25,3 @@
     loop: "{{ firewalld_zones | list }}"
 
   when: which_firewall == "firewalld"
-  tags: haproxy
-

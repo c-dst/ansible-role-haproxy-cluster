@@ -7,14 +7,26 @@
         - public
     when: firewalld_zones is not defined
 
-  - name: Enable protocol VRRP
-    ansible.posix.firewalld:
-      rich_rule: "rule family='ipv4' protocol value='vrrp' accept"
-      zone: "{{ item }}"
-      state: enabled
-      permanent: yes
-      immediate: yes
-    loop: "{{ firewalld_zones | list }}"
+  - name: VRRP
+    block: 
+    - name: Enable protocol VRRP
+      ansible.posix.firewalld:
+        rich_rule: "rule family='ipv4' protocol value='vrrp' accept"
+        zone: "{{ item }}"
+        state: enabled
+        permanent: yes
+        immediate: yes
+      loop: "{{ firewalld_zones | list }}"
+      when: not keepalived_vrrp_unicast 
+
+    - name: Enable protocol VRRP
+      ansible.posix.firewalld:
+        rich_rule: "rule family='ipv4' protocol value='vrrp' accept"
+        zone: "{{ item }}"
+        state: disabled
+        permanent: yes
+        immediate: yes
+      loop: "{{ firewalld_zones | list }}"
+      when: keepalived_vrrp_unicast 
 
   when: which_firewall == "firewalld"
-  tags: keepalived
