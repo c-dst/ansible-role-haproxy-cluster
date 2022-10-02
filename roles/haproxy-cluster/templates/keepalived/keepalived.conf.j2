@@ -14,11 +14,11 @@ global_defs {
 }
 
 # Define the script used to check if haproxy is still working
-vrrp_script check_haproxy {
-    script "/usr/bin/killall -0 haproxy"
-    interval 2
-    weight 2
-    timeout 5
+vrrp_track_process track_haproxy {
+    process "haproxy"
+    quorum 1
+    weight 100
+    delay 1
 }
 
 {% for instance in haproxy_service_config %}
@@ -51,6 +51,7 @@ vrrp_instance {{ instance }} {
     }
 
 {% if keepalived_vrrp_unicast %}
+    unicast_src_ip {{ lookup('community.general.dig', ansible_fqdn ) }}
     # Define unicast peer to advertise
     unicast_peer {
 {% for peer in haproxy_cluster %}
@@ -61,9 +62,9 @@ vrrp_instance {{ instance }} {
     }
 {% endif %}
 
-    # Use the Defined Script to Check whether to initiate a fail over
-    track_script {
-        check_haproxy
+    # Use the defined process to Check whether to initiate a fail over
+    track_process {
+        track_haproxy
     }
 
     # LOG : Notify state transition

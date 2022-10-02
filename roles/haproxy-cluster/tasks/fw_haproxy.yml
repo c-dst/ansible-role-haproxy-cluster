@@ -4,7 +4,7 @@
   block:
   - name: set default firewalld zone
     set_fact:
-      firewalld_zones: 
+      firewalld_zones:
         - public
     when: firewalld_zones is not defined
 
@@ -16,7 +16,17 @@
       permanent: yes
       immediate: yes
     loop: "{{ firewalld_zones | list }}"
-    when: haproxy_statsistics_allowed_ips | length > 0
+    when: haproxy_statsistics_allowedhosts | length > 0 or haproxy_statsistics_admin_allowedhosts | length > 0
+
+  - name: Disallow haproxy statsistics frontend
+    ansible.posix.firewalld:
+      rich_rule: "rule family='ipv4' port port='{{ haproxy_statsistics_port }}' protocol='tcp' accept"
+      zone: "{{ item }}"
+      state: Disabled
+      permanent: yes
+      immediate: yes
+    loop: "{{ firewalld_zones | list }}"
+    when: haproxy_statsistics_allowedhosts | length == 0 and haproxy_statsistics_admin_allowedhosts | length == 0
 
   - name: Allow haproxy services over firewalld zones
     include_tasks: fw_haproxy_firewalld_services.yml

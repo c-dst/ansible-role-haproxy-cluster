@@ -48,7 +48,8 @@
     state: present
     reload: yes
   loop:
-    - { key: net.ipv4.ip_forward,  value: 1 }
+    - { key: net.ipv4.ip_forward, value: 1 }
+    - { key: net.ipv4.ip_nonlocal_bind, value: 1 }
 
 # Keepalived
 - name: Keepalived
@@ -70,7 +71,7 @@
 
     - name: create log directory
       ansible.builtin.file:
-        path: "{{ keepalived_log_path }}" 
+        path: "{{ keepalived_log_path }}"
         state: directory
         owner: "{{ keepalived_script_user }}"
         group: root
@@ -98,6 +99,10 @@
   tags:
     - firewall
     - keepalived
+
+# - ansible.builtin.meta: flush_handlers
+- meta: flush_handlers
+  throttle: 1
 
 # HAProxy
 - name: HAProxy
@@ -179,3 +184,7 @@
   tags:
     - firewall
     - haproxy
+
+# - ansible.builtin.meta: flush_handlers
+- meta: flush_handlers
+  throttle: 1

@@ -13,15 +13,15 @@ keepalived_smtp_server: localhost
 
 keepalived_auth_pass: "default-auth-password"
 
-# User used to run script 
+# User used to run script
 keepalived_script_user: nobody
 
 # Switch from multicast to unicast redudancy
-keepalived_vrrp_unicast: false
+keepalived_vrrp_unicast: true
 
 # Log
-keepalived_log_path: "/var/log/keepalived" 
-keepalived_log_status: "{{ keepalived_log_path }}/status" 
+keepalived_log_path: "/var/log/keepalived"
+keepalived_log_status: "{{ keepalived_log_path }}/status"
 
 ## HAProxy
 # HAProxy version
@@ -46,8 +46,13 @@ haproxy_statsistics_port: 8404
 haproxy_statsistics_bind_service: true
 
 # set list to enable statistics web interface
-haproxy_statsistics_allowed_ips: []
-# haproxy_statsistics_allowed_ips:
+haproxy_statsistics_allowedhosts: []
+# haproxy_statsistics_allowedhosts:
+#   - 10.0.0.0/8
+
+# set list to allow admin statistics web interface
+haproxy_statsistics_admin_allowedhosts: []
+# haproxy_statsistics_admin_allowedhosts:
 #   - 10.0.0.0/8
 
 # ssl secure admin / statistic web interface
@@ -87,39 +92,30 @@ haproxy_service_config: {}
 #         auth_type:                  Optionnal: authentification type - Value: AH/PASS - Default: AH
 #         auth_pass:                  Required:  authentification string/password
 #       advertisements_interval       Optionnal: advertisements interval - Value: integer - Default: 1
-#     certificate:                    Required:  inline x509 certificate take precedence of file
+#     certificate:                    Required:  x509 certificate definition - inline certificate take precedence of file
 #       inline_crt:                   Required:  inline x509 certificate
 #       inline_key:                   Required:  inline x509 certificate key
-#       inline_cas:                   Required:  inline x509 ca certificate chain list
-#         -
-#       crt:                          Required:  x509 certificate path - on ansible hosts
-#       key:                          Required:  x509 certificate key
-#       cas:                          Required:  x509 ca certificate chain list
-#         -
+#       inline_cas: []                Required:  inline x509 ca certificate chain list
+#       crt:                          Optionnal: x509 certificate path - on ansible hosts
+#       key:                          Optionnal: x509 certificate key
+#       cas: []                       Optionnal: x509 ca certificate chain list
 #     haproxy:                        Required
-#       port:                         Required:  frontend port and option - Value: port number + options
-#       ports:                        Optionnal: take precedance of port parameter, frontend ports list and options to listen - Value: port number + options
-#         -
+#       ports: []                     Optionnal: take precedance of port parameter, frontend ports list and options to listen - Value: port number + options
 #       mode:                         Optionnal: proxy mode - Value: tcp/http - Default: tcp
 #       frontend:
 #         ssl:                        Optionnal: with http mode - enable ssl on all port execpt 80/http - Default: false
-#         options:                    Optionnal: frontend options list - Value: list of option name - Default: var haproxy_default_frontend_options
-#           -
-#         http_requests:              Optionnal: http-requests directive - Default: var haproxy_default_http_requests
-#           -
-#         acls:                       Optionnal: acl directive (https://www.haproxy.com/blog/introduction-to-haproxy-acls/)
-#           -
+#         options: []                 Optionnal: frontend options list - Value: list of option name - Default: var haproxy_default_frontend_options
+#         http_requests: []           Optionnal: http-requests directive - Default: var haproxy_default_http_requests
+#         acls: []                    Optionnal: acl directive (https://www.haproxy.com/blog/introduction-to-haproxy-acls/)
 #         use_backends:               Optionnal: use_backend with acls
 #           - number:                 Required:  backend number
 #             condition:              Required:  acl condition rule
 #         default_backend:            Optionnal: set default backend with the first or last backend defined in backends list - Value (first / last) - Default first
 #       backends:
 #         - balance:                  Optionnal: backend balande mode - Value: roundrobin/leastconn - Default: roundrobin
-#           options:                  Optionnal: frontend option list - Value: list of option name - Default: var haproxy_default_backend_options
-#             -
+#           options: []               Optionnal: frontend option list - Value: list of option name - Default: var haproxy_default_backend_options
 #           default_server:           Optionnal: global backends check param - Default: check
-#           http_checks:              Optionnal: global backends http-check param for http mode (https://www.haproxy.com/blog/how-to-enable-health-checks-in-haproxy/)
-#             -
+#           http_checks: []           Optionnal: global backends http-check param for http mode (https://www.haproxy.com/blog/how-to-enable-health-checks-in-haproxy/)
 #           hosts:                    Required:  backend hosts list
 #             - fqdn:                 Required:  backend fqdn
 #               port:                 Required:  backend port
@@ -166,7 +162,7 @@ haproxy_ssl_ciphers:
     bind_ciphers: ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384
     bind_ciphersuites: TLS_AES_128_GCM_SHA256:TLS_AES_256_GCM_SHA384:TLS_CHACHA20_POLY1305_SHA256
     bind_options: prefer-client-ciphers no-sslv3 no-tlsv10 no-tlsv11 no-tls-tickets
-    server_ciphers: ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA25:DHE-RSA-AES256-GCM-SHA384
+    server_ciphers: ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384
     server_ciphersuites: TLS_AES_128_GCM_SHA256:TLS_AES_256_GCM_SHA384:TLS_CHACHA20_POLY1305_SHA256
     server_options: no-sslv3 no-tlsv10 no-tlsv11 no-tls-tickets
   old:

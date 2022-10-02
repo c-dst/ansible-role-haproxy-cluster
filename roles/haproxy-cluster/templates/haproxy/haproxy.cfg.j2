@@ -39,7 +39,7 @@ global
     ssl-default-server-options {{ haproxy_ssl_ciphers[haproxy_ssl_security_level].server_options }}
 {% endif %}
 
-{% if haproxy_dhparams.file is defined %}
+{% if haproxy_dhparams.file is defined and haproxy_ssl_security_level in [ 'intermediate', 'old' ]%}
     # SSL dhparam
     ssl-dh-param-file {{ haproxy_dhparams.file }}
 {% endif %}
@@ -56,7 +56,7 @@ defaults
     errorfile {{ error }} /etc/haproxy/errors/{{ error }}.http
 {% endfor %}
 
-{% if haproxy_statsistics_allowed_ips | length > 0 %}
+{% if haproxy_statsistics_allowedhosts | length > 0 or haproxy_statsistics_admin_allowedhosts | length > 0 %}
 ## Frontend front_statistics
 frontend front_statistics
     bind {{ lookup('community.general.dig', ansible_fqdn ) }}:{{ haproxy_statsistics_port }} {% if haproxy_statsistics_ssl %}ssl crt {{ ansible_fqdn }}.pem alpn h2,http/1.1{% endif %}
@@ -76,15 +76,22 @@ frontend front_statistics
     http-request {{ request }}
 {% endfor %}
 
-{% for ip in haproxy_statsistics_allowed_ips %}
+{% for ip in haproxy_statsistics_allowedhosts %}
     acl allowed_stats_ips src {{ ip }}
+{% else %}
+    acl allowed_stats_ips src 127.0.0.1
 {% endfor %}
-    http-request deny if !allowed_stats_ips
+{% for ip in haproxy_statsistics_admin_allowedhosts %}
+    acl allowed_admin_stats_ips src {{ ip }}
+{% else %}
+    acl allowed_admin_stats_ips src 127.0.0.1
+{% endfor %}
+    http-request deny if !allowed_stats_ips !allowed_admin_stats_ips
 
     stats enable
     stats uri /
     stats refresh 30s
-    stats admin if allowed_stats_ips
+    stats admin if allowed_admin_stats_ips
 {% endif%}
 
 {% for instance in haproxy_service_config %}
@@ -108,9 +115,16 @@ frontend front_statistics
 {# set backend name - Default : instance #}
 {% set backend_name = instance %}
 {# set ssl / https params - Default : false #}
+{% if haproxy.ports is defined and haproxy.ports is iterable %}
+{% set haproxy_ports = haproxy.ports %}
+{% elif haproxy.ports is defined %}
+{% set haproxy_ports = [ haproxy.ports ] %}
+{% else %}
+{% set haproxy_ports = [] %}
+{% endif %}
 {% if mode == 'http' %}
-{% set is_http = ((haproxy.ports | default ( [ haproxy.port ] ) | select ('eq', 80 )|list) | length )| bool %}
-{% set is_https = ((haproxy.ports | default ( [ haproxy.port ] ) | select ('eq', 443 )|list) | length ) | bool %}
+{% set is_http = (( haproxy_ports | select ('eq', '80' ) | list ) | length ) | bool %}
+{% set is_https = (( haproxy_ports | select ('eq', '443' ) | list ) | length ) | bool %}
 {% set is_ssl = haproxy.frontend.ssl | default (false) %}
 {% else %}
 {% set is_http = false %}
@@ -124,7 +138,7 @@ frontend front_{{ instance }}
     option {{ option }}
 {% endfor %}
 
-{% for port in haproxy.ports | default ( [ haproxy.port ] ) %}
+{% for port in haproxy_ports %}
 {% if is_ssl and port != 80 or mode == 'http' and port == 443 %}
     bind {{ bind_adddress }}:{{ port }} ssl crt {{ instance }}.pem alpn h2,http/1.1
 {% else%}
@@ -153,30 +167,48 @@ frontend front_{{ instance }}
 {% endif %}
 {% endif %}
 {# ACLs #}
-{% for acl in haproxy.frontend.acls | default ( '' )%}
+{% for acl in haproxy.frontend.acls | default ( [] )%}
     acl {{ acl }}
 {% endfor %}
 
 {# use backend with conditions #}
 {% for backend in haproxy.frontend.use_backends | default ( [] ) %}
-{% if ( haproxy.backends | list | length == 1 and backend.number is not defined ) or haproxy.backends | list | length == 1 %}
-{# use_backend directive with only one backend #}
-    use_backend back_{{ backend_name }} if {{ backend.condition }}
-{%else %}
+{% if backend.condition is defined %}
+{% if backend.number is defined and haproxy.backends | list | length > 1 %}
 {# use_backend directive with more than one backend #}
-{% if backend.condition is defined and backend.number is defined %}
-    use_backend back_{{ backend_name }}_{{ backend.number  }} if {{ backend.condition | default ('') }}
+    use_backend back_{{ backend_name }}_{{ backend.number }} if {{ backend.condition }}
+{% elif backend.number is not defined and haproxy.backends | list | length > 1 %}
+{# use_backend directive with more than one backend #}
+    use_backend back_{{ backend_name }}_1 if {{ backend.condition }}
+{% elif backend.number is not defined %}
+{# use_backend directive with more than one backend #}
+    use_backend back_{{ backend_name }} if {{ backend.condition }}
 {% else %}
-#    ERROR : backend number and backend condition must be set 
+{# use_backend directive with only one backend #}
+    use_backend back_{{ backend_name }}
 {% endif %}
 {% endif %}
 {% endfor %}
 
-{# Set default backend #}
-{% if haproxy.backends | list | length > 1 %}
-    default_backend back_{{ backend_name }}_{% if haproxy.frontend.default_backend | default ('first') == 'first' %}1{% else %}haproxy.backends | list | length{% endif %}
+{# Manage **default_backend** #}
+{# If **default_backend** is defined and match **first** or **last** #}
+{% if haproxy.default_backend is defined and haproxy.default_backend in ['first', 'last'] and haproxy.backends | list | length > 1 %}
+{# Set **default_backend** to **first** or **last** defined backend #}
+    default_backend back_{{ backend_name }}_{% if haproxy.frontend.default_backend == 'first' %}1{% else %}haproxy.backends | list | length{% endif %}
 
-{% else%}
+{# If **default_backend** is defined and don't match **first** or **last** #}
+{% elif haproxy.default_backend is defined %}
+{# Set **default_backend** to specific name  #}
+    default_backend back_{{ haproxy.default_backend }}
+
+{% endif %}
+{# If no **default_backend** and no specific **used_backend** are defined #}
+{% if haproxy.default_backend is not defined and haproxy.frontend.use_backends is not defined and haproxy.backends | list | length > 1 %}
+{# Set **default_backend** to **first** defined backend #}
+    default_backend back_{{ backend_name }}_1
+
+{% elif haproxy.default_backend is not defined and haproxy.frontend.use_backends is not defined %}
+{# Set **default_backend** #}
     default_backend back_{{ backend_name }}
 
 {% endif %}
@@ -199,7 +231,7 @@ backend back_{{ backend_name }}
 {% endif%}
 {% endfor %}
 
-    {{ backend.default_server | default ('default-server check') }}
+    default-server {{ backend.default_server | default ('check') }}
 
 {% for host in backend.hosts %}
     server {{ host.fqdn.split('.')[0] }} {{ lookup('community.general.dig', host.fqdn ) }}:{{ host.port }} check {{ host.check | default ('') }}

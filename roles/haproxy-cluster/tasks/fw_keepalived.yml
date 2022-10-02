@@ -3,30 +3,17 @@
   block:
   - name: set default firewalld zone
     set_fact:
-      firewalld_zones: 
+      firewalld_zones:
         - public
     when: firewalld_zones is not defined
 
-  - name: VRRP
-    block: 
-    - name: Enable protocol VRRP
-      ansible.posix.firewalld:
-        rich_rule: "rule family='ipv4' protocol value='vrrp' accept"
-        zone: "{{ item }}"
-        state: enabled
-        permanent: yes
-        immediate: yes
-      loop: "{{ firewalld_zones | list }}"
-      when: not keepalived_vrrp_unicast 
-
-    - name: Enable protocol VRRP
-      ansible.posix.firewalld:
-        rich_rule: "rule family='ipv4' protocol value='vrrp' accept"
-        zone: "{{ item }}"
-        state: disabled
-        permanent: yes
-        immediate: yes
-      loop: "{{ firewalld_zones | list }}"
-      when: keepalived_vrrp_unicast 
+  - name: Enable protocol VRRP
+    ansible.posix.firewalld:
+      rich_rule: "rule family='ipv4' protocol value='vrrp' accept"
+      zone: "{{ item }}"
+      state: enabled
+      permanent: yes
+      immediate: yes
+    loop: "{{ firewalld_zones | list }}"
 
   when: which_firewall == "firewalld"
